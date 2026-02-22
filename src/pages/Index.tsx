@@ -1,4 +1,5 @@
-import { Shield, Bell, Radio, Clock, Eye } from "lucide-react";
+import { Shield, Bell, Radio, Clock, Eye, BarChart3, AlertTriangle } from "lucide-react";
+import { Link } from "react-router-dom";
 import { StatsGrid } from "@/components/StatsGrid";
 import { AlertFeed } from "@/components/AlertFeed";
 import { IncidentMap } from "@/components/IncidentMap";
@@ -22,6 +23,14 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <Link to="/analytics" className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-secondary transition-colors text-xs text-muted-foreground hover:text-foreground font-medium">
+              <BarChart3 className="w-3 h-3" />
+              Analytics
+            </Link>
+            <Link to="/alerts" className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-secondary transition-colors text-xs text-muted-foreground hover:text-foreground font-medium">
+              <AlertTriangle className="w-3 h-3" />
+              Alerts
+            </Link>
             <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground font-mono">
               <Eye className="w-3 h-3 text-primary" />
               <span>248 cameras active</span>
