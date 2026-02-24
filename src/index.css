@@ -6,6 +6,66 @@
 
 @layer base {
   :root {
+    /* LIGHT MODE VARIABLES */
+    --background: 0 0% 100%;
+    --foreground: 220 20% 7%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 7%;
+
+    --primary: 187 80% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 15% 90%;
+    --secondary-foreground: 220 20% 7%;
+
+    --muted: 220 15% 90%;
+    --muted-foreground: 215 15% 45%;
+
+    --accent: 187 60% 80%;
+    --accent-foreground: 187 80% 20%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --success: 142 60% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --info: 210 80% 50%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 220 13% 85%;
+    --input: 220 13% 85%;
+    --ring: 187 80% 40%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 220 20% 7%;
+    --sidebar-primary: 187 80% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 90%;
+    --sidebar-accent-foreground: 220 20% 7%;
+    --sidebar-border: 220 13% 85%;
+    --sidebar-ring: 187 80% 40%;
+
+    --glow-primary: 0 0 20px hsl(187 80% 40% / 0.2);
+    --glow-destructive: 0 0 20px hsl(0 84% 60% / 0.2);
+    --glow-warning: 0 0 20px hsl(38 92% 50% / 0.2);
+    --glow-success: 0 0 15px hsl(142 60% 40% / 0.2);
+
+    --font-display: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  .dark {
+    /* DARK MODE VARIABLES (Your original :root values) */
     --background: 220 20% 7%;
     --foreground: 210 20% 92%;
 
@@ -43,8 +103,6 @@
     --input: 220 15% 18%;
     --ring: 187 80% 50%;
 
-    --radius: 0.5rem;
-
     --sidebar-background: 220 20% 9%;
     --sidebar-foreground: 210 20% 85%;
     --sidebar-primary: 187 80% 50%;
@@ -58,9 +116,6 @@
     --glow-destructive: 0 0 20px hsl(0 72% 55% / 0.4);
     --glow-warning: 0 0 20px hsl(38 92% 55% / 0.3);
     --glow-success: 0 0 15px hsl(142 60% 45% / 0.3);
-
-    --font-display: 'Inter', system-ui, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
   }
 }
 
@@ -105,8 +160,8 @@
 
   .bg-grid {
     background-image: 
-      linear-gradient(hsl(220 15% 15% / 0.5) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(220 15% 15% / 0.5) 1px, transparent 1px);
+      linear-gradient(hsl(var(--foreground) / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.05) 1px, transparent 1px);
     background-size: 40px 40px;
   }
 

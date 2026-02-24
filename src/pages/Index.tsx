@@ -6,6 +6,8 @@ import { IncidentMap } from "@/components/IncidentMap";
 import { CCTVGrid } from "@/components/CCTVGrid";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { TrafficSignals } from "@/components/TrafficSignals";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 const Index = () => {
   return (
@@ -23,6 +25,10 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+            </div>
             <Link to="/analytics" className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-secondary transition-colors text-xs text-muted-foreground hover:text-foreground font-medium">
               <BarChart3 className="w-3 h-3" />
               Analytics
@@ -31,10 +37,10 @@ const Index = () => {
               <AlertTriangle className="w-3 h-3" />
               Alerts
             </Link>
-            <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground font-mono">
+            {/* <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground font-mono">
               <Eye className="w-3 h-3 text-primary" />
               <span>248 cameras active</span>
-            </div>
+            </div> */}
             <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground font-mono">
               <Clock className="w-3 h-3" />
               <span>{new Date().toLocaleTimeString()}</span>
@@ -49,6 +55,7 @@ const Index = () => {
             </button>
           </div>
         </div>
+
       </header>
 
       {/* Main Content */}
@@ -67,13 +74,13 @@ const Index = () => {
         </div>
 
         {/* CCTV */}
-        <CCTVGrid />
+        {/* <CCTVGrid /> */}
 
         {/* Analytics */}
         <AnalyticsDashboard />
 
         {/* Traffic Signals */}
-        <TrafficSignals />
+        {/* <TrafficSignals /> */}
       </main>
 
       {/* Footer */}
