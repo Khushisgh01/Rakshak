@@ -102,7 +102,7 @@ import { Shield, Bell, Radio, Clock, Eye, BarChart3, AlertTriangle, Video } from
 import { Link } from "react-router-dom";
 import { StatsGrid } from "@/components/StatsGrid";
 import { AlertFeed } from "@/components/AlertFeed";
-import { IncidentMap } from "@/components/IncidentMap";
+import IncidentMap from "@/components/IncidentMap";
 import { CCTVGrid } from "@/components/CCTVGrid";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { TrafficSignals } from "@/components/TrafficSignals";
