@@ -1,6 +1,6 @@
 import { Shield, ArrowLeft, AlertTriangle, Flame, Car, Zap, Clock, Phone, Send, Radio, Building2, Newspaper, Ambulance, Siren, Bell, CheckCircle2, XCircle, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import React, { useState } from "react";
 
 type Severity = "critical" | "high" | "medium" | "low";
 type DispatchStatus = "pending" | "notified" | "acknowledged" | "en-route";
@@ -136,6 +136,95 @@ const Alerts = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left: Incident List */}
           <div className="lg:col-span-4 rounded-lg border border-border bg-card flex flex-col max-h-[calc(100vh-120px)]">
+                <div className="p-4 border-b border-border flex items-center gap-2">
+                  <Ambulance className="w-4 h-4 text-destructive" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">Emergency Services</h3>
+                </div>
+                <div className="divide-y divide-border">
+                  {hospitalDispatches.length === 0 ? (
+                    <div className="p-4 text-sm text-muted-foreground text-center">No emergency dispatch for this incident</div>
+                  ) : (
+                    hospitalDispatches.map((d, i) => {
+                      const st = dispatchStatusStyles[d.status];
+                      return (
+                        <div key={i} className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
+                          <div className="text-muted-foreground">{serviceIcon[d.type]}</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{d.service}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="font-mono text-[10px] text-muted-foreground">{d.contact}</span>
+                              <span className="text-[10px] text-muted-foreground">{d.time}</span>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${st.bg} ${st.text}`}>
+                            {d.status}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+                <div className="p-3 border-t border-border">
+                  <button className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-colors">
+                    <Phone className="w-3 h-3" />
+                    Dispatch Additional Units
+                  </button>
+                </div>
+              </div>
+
+          {/* Right: Detail + Dispatch */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Incident Detail */}
+            <div className="rounded-lg border border-border bg-card p-5">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-sm text-muted-foreground">{selected.id}</span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-semibold uppercase border ${severityBadge[selected.severity]}`}>
+                      {selected.severity}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${statusBadge[selected.status]}`}>
+                      {selected.status}
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-bold text-foreground">{selected.type}</h2>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="w-3 h-3" />
+                  {selected.time}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-primary mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Location</p>
+                    <p className="text-foreground">{selected.location}</p>
+                    <p className="font-mono text-xs text-muted-foreground">{selected.coordinates}</p>
+                  </div>
+                </div>
+                {/* <div className="flex items-start gap-2">
+                  <Shield className="w-4 h-4 text-primary mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Camera</p>
+                    <p className="font-mono text-foreground">{selected.cameraId}</p>
+                  </div>
+                </div> */}
+                {/* <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-warning mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">AI Description</p>
+                    <p className="text-foreground">{selected.description}</p>
+                  </div>
+                </div> */}
+              </div>
+            </div>
+
+            {/* Dispatch Panels */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              <div className="lg:col-span-4 rounded-lg border border-border bg-card flex flex-col max-h-[calc(100vh-120px)]">
             <div className="p-4 border-b border-border">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">Detected Incidents</h3>
@@ -188,97 +277,8 @@ const Alerts = () => {
             </div>
           </div>
 
-          {/* Right: Detail + Dispatch */}
-          <div className="lg:col-span-8 space-y-6">
-            {/* Incident Detail */}
-            <div className="rounded-lg border border-border bg-card p-5">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono text-sm text-muted-foreground">{selected.id}</span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-semibold uppercase border ${severityBadge[selected.severity]}`}>
-                      {selected.severity}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${statusBadge[selected.status]}`}>
-                      {selected.status}
-                    </span>
-                  </div>
-                  <h2 className="text-xl font-bold text-foreground">{selected.type}</h2>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  {selected.time}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-primary mt-0.5" />
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Location</p>
-                    <p className="text-foreground">{selected.location}</p>
-                    <p className="font-mono text-xs text-muted-foreground">{selected.coordinates}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Shield className="w-4 h-4 text-primary mt-0.5" />
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Camera</p>
-                    <p className="font-mono text-foreground">{selected.cameraId}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-warning mt-0.5" />
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">AI Description</p>
-                    <p className="text-foreground">{selected.description}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Dispatch Panels */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Emergency Services */}
-              <div className="rounded-lg border border-border bg-card">
-                <div className="p-4 border-b border-border flex items-center gap-2">
-                  <Ambulance className="w-4 h-4 text-destructive" />
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">Emergency Services</h3>
-                </div>
-                <div className="divide-y divide-border">
-                  {hospitalDispatches.length === 0 ? (
-                    <div className="p-4 text-sm text-muted-foreground text-center">No emergency dispatch for this incident</div>
-                  ) : (
-                    hospitalDispatches.map((d, i) => {
-                      const st = dispatchStatusStyles[d.status];
-                      return (
-                        <div key={i} className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
-                          <div className="text-muted-foreground">{serviceIcon[d.type]}</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{d.service}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="font-mono text-[10px] text-muted-foreground">{d.contact}</span>
-                              <span className="text-[10px] text-muted-foreground">{d.time}</span>
-                            </div>
-                          </div>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${st.bg} ${st.text}`}>
-                            {d.status}
-                          </span>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-                <div className="p-3 border-t border-border">
-                  <button className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-colors">
-                    <Phone className="w-3 h-3" />
-                    Dispatch Additional Units
-                  </button>
-                </div>
-              </div>
-
               {/* Media / Journalist */}
-              <div className="rounded-lg border border-border bg-card">
+              {/* <div className="rounded-lg border border-border bg-card">
                 <div className="p-4 border-b border-border flex items-center gap-2">
                   <Newspaper className="w-4 h-4 text-info" />
                   <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">Media & Press</h3>
@@ -313,11 +313,11 @@ const Alerts = () => {
                     Send Press Alert
                   </button>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Dispatch Timeline */}
-            <div className="rounded-lg border border-border bg-card p-4">
+            {/* <div className="rounded-lg border border-border bg-card p-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground mb-4">Dispatch Timeline</h3>
               <div className="space-y-3">
                 {currentDispatches.map((d, i) => {
@@ -342,7 +342,7 @@ const Alerts = () => {
                   );
                 })}
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </main>
