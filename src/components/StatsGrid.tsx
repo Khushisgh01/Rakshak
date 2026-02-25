@@ -48,7 +48,7 @@ export function StatCard({ title, value, change, trend, icon, severity = "defaul
 
 export function StatsGrid() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
       <StatCard
         title="Active Incidents"
         value={7}
@@ -73,14 +73,14 @@ export function StatsGrid() {
         icon={<Car className="w-4 h-4" />}
         severity="default"
       />
-      <StatCard
+      {/* <StatCard
         title="System Uptime"
         value="99.7%"
         change="All cameras online"
         trend="neutral"
         icon={<Activity className="w-4 h-4" />}
         severity="success"
-      />
+      /> */}
     </div>
   );
 }
