@@ -141,6 +141,10 @@ const Index = () => {
               <Video className="w-3 h-3" />
               Footage Evidence
             </Link>
+            <Link to="/add-camera" className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-secondary transition-colors text-xs text-muted-foreground hover:text-foreground font-medium">
+              <Video className="w-3 h-3" />
+              Add Camera
+            </Link>
             <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground font-mono">
               <Clock className="w-3 h-3" />
               <span>{new Date().toLocaleTimeString()}</span>
