@@ -67,6 +67,8 @@ const App = () => (
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/footage" element={<FootageEvidence />} />
             <Route path="/report" element={<ReportIssue />} />
+            <Route path="/add-camera" element={<AddCamera />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
