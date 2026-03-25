@@ -7,6 +7,9 @@
 // import Index from "./pages/Index";
 // import Analytics from "./pages/Analytics";
 // import Alerts from "./pages/Alerts";
+// import FootageEvidence from "./pages/FootageEvidence";
+// import ReportIssue from "./pages/ReportIssue";
+// import LocationAnalysis from "./pages/LocationAnalysis"; // IMPORT THE NEW PAGE
 // import NotFound from "./pages/NotFound";
 
 // const queryClient = new QueryClient();
@@ -21,8 +24,10 @@
 //           <Routes>
 //             <Route path="/" element={<Index />} />
 //             <Route path="/analytics" element={<Analytics />} />
+//             <Route path="/location-analysis" element={<LocationAnalysis />} /> {/* NEW ROUTE */}
 //             <Route path="/alerts" element={<Alerts />} />
-//             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+//             <Route path="/footage" element={<FootageEvidence />} />
+//             <Route path="/report" element={<ReportIssue />} />
 //             <Route path="*" element={<NotFound />} />
 //           </Routes>
 //         </BrowserRouter>
@@ -42,8 +47,9 @@ import Index from "./pages/Index";
 import Analytics from "./pages/Analytics";
 import Alerts from "./pages/Alerts";
 import FootageEvidence from "./pages/FootageEvidence";
+import ReportIssue from "./pages/ReportIssue";
+import LocationAnalysis from "./pages/LocationAnalysis"; // IMPORTED
 import NotFound from "./pages/NotFound";
-import AddCamera from "./pages/AddCamera";
 
 const queryClient = new QueryClient();
 
@@ -57,8 +63,10 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/location-analysis" element={<LocationAnalysis />} /> {/* NEW ROUTE */}
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/footage" element={<FootageEvidence />} />
+            <Route path="/report" element={<ReportIssue />} />
             <Route path="/add-camera" element={<AddCamera />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
