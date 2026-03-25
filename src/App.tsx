@@ -50,6 +50,7 @@ import FootageEvidence from "./pages/FootageEvidence";
 import ReportIssue from "./pages/ReportIssue";
 import LocationAnalysis from "./pages/LocationAnalysis"; // IMPORTED
 import NotFound from "./pages/NotFound";
+import AddCamera from "./pages/AddCamera";
 
 const queryClient = new QueryClient();
 
