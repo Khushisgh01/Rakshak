@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, MapPin, BarChart3, Loader2, Activity, PieChart as PieIcon } from "lucide-react";
+import { ArrowLeft, MapPin, BarChart3, Loader2, Activity, PieChart as PieIcon, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { toast } from "sonner";
 
-// REPLACE WITH YOUR ACTUAL BACKEND DOMAIN
-const API_BASE = "http://localhost:8000";
+// Your Django Backend URL
+const API_BASE = "http://127.0.0.1:8000";
 
 export default function LocationAnalysis() {
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
-  const [radius, setRadius] = useState("5"); // Variable for backend radius
+  const [radius, setRadius] = useState("5"); 
+  const [timeRange, setTimeRange] = useState("all"); // weekly, monthly, or all
   const [useCurrentLoc, setUseCurrentLoc] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<any[]>([]);
+  const [incidents, setIncidents] = useState<any[]>([]);
+  const [analysisMeta, setAnalysisMeta] = useState<any>(null);
 
   // GPS Auto-fill logic
   useEffect(() => {
@@ -24,8 +26,8 @@ export default function LocationAnalysis() {
           setLng(pos.coords.longitude.toFixed(6));
           toast.success("Current GPS location synced");
         },
-        () => {
-          toast.error("Location access denied");
+        (err) => {
+          toast.error("Location access denied: " + err.message);
           setUseCurrentLoc(false);
         }
       );
@@ -39,24 +41,40 @@ export default function LocationAnalysis() {
     }
     setLoading(true);
     try {
-      // API call to the incident/within-radius/ endpoint
-      const res = await fetch(`${API_BASE}/incident/within-radius/?latitude=${lat}&longitude=${lng}&distance=${radius}`);
-      if (!res.ok) throw new Error();
-      const incidents = await res.json();
-      setData(incidents);
-      toast.success(`Analysis complete: Found ${incidents.length} incidents`);
-    } catch {
-      toast.error("Failed to connect to backend");
+      // API call now includes time_range parameter
+      // Your backend logic handles the auto-deletion of >30 day old records
+      const url = `${API_BASE}/incident/within-radius/?latitude=${lat}&longitude=${lng}&distance_km=${radius}&time_range=${timeRange}`;
+      
+      const res = await fetch(url);
+      const result = await res.json();
+      
+      if (result.success) {
+        setIncidents(result.incidents);
+        setAnalysisMeta({
+            count: result.incident_count,
+            distance: result.distance_km,
+            period: timeRange
+        });
+        toast.success(`Analysis complete: ${result.incident_count} records found`);
+      } else {
+        throw new Error(result.error || "Failed to fetch");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to connect to backend");
     } finally {
       setLoading(false);
     }
   };
 
   // Prepare data for Recharts
-  const chartData = data.reduce((acc: any[], curr) => {
-    const existing = acc.find(i => i.name === curr.incident_type);
-    if (existing) existing.value += 1;
-    else acc.push({ name: curr.incident_type, value: 1 });
+  const chartData = incidents.reduce((acc: any[], curr) => {
+    const type = curr.incident_type || "unknown";
+    const existing = acc.find(i => i.name === type);
+    if (existing) {
+        existing.value += 1;
+    } else {
+        acc.push({ name: type, value: 1 });
+    }
     return acc;
   }, []);
 
@@ -64,17 +82,15 @@ export default function LocationAnalysis() {
 
   return (
     <div className="min-h-screen bg-[#080b10] text-white">
-      {/* Header based on Image 1 */}
       <header className="border-b border-white/[0.06] p-4 flex items-center gap-4 sticky top-0 bg-[#080b10]/95 backdrop-blur-md z-50">
         <Link to="/"><ArrowLeft className="w-5 h-5 text-white/40 hover:text-white transition-colors" /></Link>
         <h1 className="text-sm font-bold uppercase tracking-wider">CCTV Infrastructure Planner</h1>
       </header>
 
       <main className="max-w-[1400px] mx-auto p-6 space-y-8">
-        {/* Main Input Box based on Image 1 */}
+        {/* Input Section */}
         <section className="bg-white/[0.02] border border-white/5 p-8 rounded-[32px] shadow-2xl space-y-8">
           
-          {/* Custom Checkbox */}
           <div className="flex items-center gap-3">
             <input 
               type="checkbox" 
@@ -88,17 +104,13 @@ export default function LocationAnalysis() {
             </label>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
             {/* Latitude */}
             <div className="space-y-3">
               <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest block">Center Latitude</label>
               <input 
-                type="number" 
-                step="any"
-                value={lat}
-                disabled={useCurrentLoc}
-                onChange={(e) => setLat(e.target.value)}
-                placeholder="28.825045"
+                type="number" step="any" value={lat} disabled={useCurrentLoc}
+                onChange={(e) => setLat(e.target.value)} placeholder="28.8250"
                 className="w-full bg-[#0c0f16] border border-white/10 p-4 rounded-xl outline-none focus:border-red-500/50 disabled:opacity-40 transition-all font-mono" 
               />
             </div>
@@ -107,53 +119,66 @@ export default function LocationAnalysis() {
             <div className="space-y-3">
               <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest block">Center Longitude</label>
               <input 
-                type="number" 
-                step="any"
-                value={lng}
-                disabled={useCurrentLoc}
-                onChange={(e) => setLng(e.target.value)}
-                placeholder="77.169400"
+                type="number" step="any" value={lng} disabled={useCurrentLoc}
+                onChange={(e) => setLng(e.target.value)} placeholder="77.1694"
                 className="w-full bg-[#0c0f16] border border-white/10 p-4 rounded-xl outline-none focus:border-red-500/50 disabled:opacity-40 transition-all font-mono" 
               />
             </div>
 
-            {/* NEW: Radius Box (Distance Variable) */}
+            {/* Radius */}
             <div className="space-y-3">
               <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest block">Radius (KM)</label>
               <input 
-                type="number" 
-                value={radius}
-                onChange={(e) => setRadius(e.target.value)}
-                placeholder="5"
+                type="number" value={radius} onChange={(e) => setRadius(e.target.value)} placeholder="5"
                 className="w-full bg-[#0c0f16] border border-white/10 p-4 rounded-xl outline-none focus:border-red-500/50 transition-all font-mono" 
               />
             </div>
 
-            {/* Generate Button based on Image 1 */}
+            {/* Time Filter */}
+            <div className="space-y-3">
+              <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest block flex items-center gap-1">
+                <Calendar className="w-3 h-3" /> Time Period
+              </label>
+              <select 
+                value={timeRange} 
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="w-full bg-[#0c0f16] border border-white/10 p-4 rounded-xl outline-none focus:border-red-500/50 font-mono text-sm text-white appearance-none cursor-pointer"
+              >
+                <option value="all" className="bg-[#0c0f16]">Total Lifetime</option>
+                <option value="week" className="bg-[#0c0f16]">Past 7 Days</option>
+                <option value="month" className="bg-[#0c0f16]">Past 30 Days</option>
+              </select>
+            </div>
+
+            {/* Action Button */}
             <button 
-              onClick={fetchAnalysis} 
-              disabled={loading}
+              onClick={fetchAnalysis} disabled={loading}
               className="bg-[#e63946] hover:bg-red-500 h-[58px] rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-lg shadow-red-900/20 px-8"
             >
-              {loading ? <Loader2 className="animate-spin" /> : <><Activity className="w-4 h-4" /> Generate Analysis</>}
+              {loading ? <Loader2 className="animate-spin" /> : <><Activity className="w-4 h-4" /> Generate</>}
             </button>
           </div>
         </section>
 
-        {/* Charts Section */}
-        {data.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in duration-1000">
+        {/* Charts and Visuals */}
+        {incidents.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Bar Chart */}
             <div className="bg-white/[0.02] border border-white/5 p-8 rounded-3xl h-[450px]">
               <div className="flex items-center gap-2 mb-8">
                 <BarChart3 className="w-4 h-4 text-red-500" />
-                <h3 className="text-xs font-bold uppercase tracking-widest text-white/40">Incident Density</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-white/40">
+                    Incident Density ({analysisMeta?.period === 'all' ? 'Total' : analysisMeta?.period})
+                </h3>
               </div>
               <ResponsiveContainer width="100%" height="80%">
                 <BarChart data={chartData}>
-                  <XAxis dataKey="name" tick={{fill: '#444', fontSize: 10}} axisLine={false} tickLine={false} />
-                  <YAxis tick={{fill: '#444', fontSize: 10}} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{background: '#0a0d12', border: '1px solid #ffffff10', borderRadius: '12px'}} />
+                  <XAxis dataKey="name" tick={{fill: '#666', fontSize: 10}} axisLine={false} tickLine={false} />
+                  <YAxis tick={{fill: '#666', fontSize: 10}} axisLine={false} tickLine={false} />
+                  <Tooltip 
+                    cursor={{fill: 'rgba(255,255,255,0.03)'}}
+                    contentStyle={{background: '#0a0d12', border: '1px solid #ffffff10', borderRadius: '12px'}} 
+                  />
                   <Bar dataKey="value" fill="#ef4444" radius={[6, 6, 0, 0]} barSize={40} />
                 </BarChart>
               </ResponsiveContainer>
@@ -163,7 +188,7 @@ export default function LocationAnalysis() {
             <div className="bg-white/[0.02] border border-white/5 p-8 rounded-3xl h-[450px]">
               <div className="flex items-center gap-2 mb-8">
                 <PieIcon className="w-4 h-4 text-blue-500" />
-                <h3 className="text-xs font-bold uppercase tracking-widest text-white/40">Hazard Breakdown</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-white/40">Risk Distribution</h3>
               </div>
               <ResponsiveContainer width="100%" height="80%">
                 <PieChart>
@@ -177,7 +202,7 @@ export default function LocationAnalysis() {
                  {chartData.map((d, i) => (
                     <div key={i} className="flex items-center gap-2 text-[10px] font-mono text-white/40">
                        <div className="w-2 h-2 rounded-full" style={{background: COLORS[i % COLORS.length]}} />
-                       {d.name}: {d.value}
+                       {d.name.toUpperCase()}: {d.value}
                     </div>
                  ))}
               </div>
@@ -186,7 +211,7 @@ export default function LocationAnalysis() {
         ) : !loading && (
           <div className="h-[400px] flex flex-col items-center justify-center text-white/5 border-2 border-dashed border-white/5 rounded-[40px] bg-white/[0.01]">
              <MapPin className="w-12 h-12 mb-4 opacity-50" />
-             <p className="text-sm font-medium">Scan non-CCTV areas to analyze reported accident patterns</p>
+             <p className="text-sm font-medium">No incidents recorded in this area for the selected time period.</p>
           </div>
         )}
       </main>
