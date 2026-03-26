@@ -113,16 +113,17 @@
 // };
 
 // export default Index;
-import { 
-  Shield, 
-  Bell, 
-  Radio, 
-  Clock, 
-  BarChart3, 
-  AlertTriangle, 
-  Video, 
-  FilePlus, 
-  Map as MapIcon 
+import {
+  Shield,
+  Bell,
+  Radio,
+  Clock,
+  BarChart3,
+  AlertTriangle,
+  Video,
+  Plus,
+  FilePlus,
+  Map as MapIcon
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { StatsGrid } from "@/components/StatsGrid";
@@ -185,6 +186,14 @@ const Index = () => {
               <MapIcon className="w-3.5 h-3.5" />
               Infrastructure Planning
             </Link>
+            <Link
+              to="/add-camera"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-95 shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add Camera</span>
+              <span className="sm:hidden">Add</span>
+            </Link>
 
             {/* ── Report an Issue — prominent CTA ── */}
             <Link
@@ -238,12 +247,12 @@ const Index = () => {
         <div className="max-w-[1600px] mx-auto px-4 lg:px-6 flex items-center justify-between text-xs text-muted-foreground font-mono">
           <span>RoadGuard AI v1.0 — Command Center</span>
           <div className="flex items-center gap-3">
-             <Link to="/location-analysis" className="hover:text-primary transition-colors">Infra Analysis</Link>
-             <span className="text-border">|</span>
-             <span className="flex items-center gap-1.5">
-               <span className="w-1.5 h-1.5 rounded-full bg-success" />
-               All systems operational
-             </span>
+            <Link to="/location-analysis" className="hover:text-primary transition-colors">Infra Analysis</Link>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-success" />
+              All systems operational
+            </span>
           </div>
         </div>
       </footer>
