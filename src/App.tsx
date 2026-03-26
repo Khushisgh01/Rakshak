@@ -66,9 +66,10 @@ const App = () => (
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/location-analysis" element={<LocationAnalysis />} /> {/* NEW ROUTE */}
             <Route path="/alerts" element={<Alerts />} />
-            <Route path="/footage" element={<FootageEvidence />} />
             <Route path="/report" element={<ReportIssue />} />
             <Route path="/add-camera" element={<AddCamera />} />
+            
+            <Route path="/footage" element={<FootageEvidence />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

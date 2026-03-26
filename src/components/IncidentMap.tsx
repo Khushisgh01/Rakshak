@@ -124,7 +124,7 @@ console.log("RAW LINE:", line);
   const fireAlert = obj.models?.fire?.detected;
 
 const accidentAlert = obj.models?.accident?.detections?.some(
-  (d: any) => d.confidence >= 0.85
+  (d: any) => d.confidence >= 0.80
 );
 
 const hasAlert = fireAlert || accidentAlert;
@@ -134,6 +134,9 @@ const hasAlert = fireAlert || accidentAlert;
       id: obj.camera_id, 
       position: [lat, lng],
       title: `ALERT: Camera #${obj.camera_id}`,
+      cameraUrl: obj.camera_url,
+  incidentId: obj.camera_incident?.id,        // ADD THIS
+  footagePath: obj.camera_incident?.footage_path,
       isAlert: true
     });
   }
@@ -204,7 +207,34 @@ const hasAlert = fireAlert || accidentAlert;
                   }}
                 >
                   Navigate Now
+                  
                 </button>
+                <button 
+  onClick={() => {
+    if (incident.footagePath) {
+      const filename = incident.footagePath.split('\\').pop();
+      const a = document.createElement('a');
+      a.href = `http://127.0.0.1:8000/footages/${filename}`;
+      a.download = filename || 'footage.avi';
+      a.click();
+    } else {
+      window.open(incident.cameraUrl, '_blank');
+    }
+  }}
+  style={{
+    marginTop: "8px",
+    backgroundColor: "#2563eb",
+    color: "white",
+    border: "none",
+    padding: "4px 8px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    display: "block",
+    width: "100%"
+  }}
+>
+  Download Footage
+</button>
               </div>
             </Popup>
           </Marker>
