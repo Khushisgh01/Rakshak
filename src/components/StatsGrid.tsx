@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { AlertTriangle, Flame, Car, Construction, Activity, TrendingUp, TrendingDown } from "lucide-react";
 
 interface StatCardProps {
@@ -47,40 +48,105 @@ export function StatCard({ title, value, change, trend, icon, severity = "defaul
 }
 
 export function StatsGrid() {
+  const [stats, setStats] = useState({
+    activeIncidents: 0,
+    fireSmoke: 0,
+    accidents: 0,
+    recentChange: ""
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch from existing Django endpoints
+        const [incidentRes, cameraIncidentRes] = await Promise.all([
+          fetch('http://localhost:8000/incident/get-all/'),
+          fetch('http://localhost:8000/camera-incident/get-all/')
+        ]);
+
+        const incidentData = await incidentRes.json();
+        const cameraIncidentData = await cameraIncidentRes.json();
+
+        // inside your useEffect fetchData function
+
+        if (incidentData.success && cameraIncidentData.success) {
+          const allIncidents = incidentData.incidents || [];
+          const allCameraIncidents = cameraIncidentData.camera_incidents || [];
+
+          // 1. Count Fire/Smoke from general Incidents (User Reports)
+          const fireCount = allIncidents.filter((i: any) =>
+            i.incident_type?.toLowerCase().includes("fire") ||
+            i.incident_type?.toLowerCase().includes("smoke")
+          ).length;
+
+          // 2. Count Accidents from BOTH sources
+
+          // From Camera_Incident table (using backend codes: c, cf, cs, cfs)
+          const cameraAccidents = allCameraIncidents.filter((i: any) => {
+            const type = i.incident_type?.toLowerCase();
+            return type === 'c' || type === 'cf' || type === 'cs' || type === 'cfs';
+          }).length;
+
+          // From Incident table (User reports usually use full words)
+          const reportedAccidents = allIncidents.filter((i: any) =>
+            i.incident_type?.toLowerCase().includes("accident") ||
+            i.incident_type?.toLowerCase().includes("crash")
+          ).length;
+
+          setStats({
+            activeIncidents: allIncidents.length,
+            fireSmoke: fireCount,
+            accidents: cameraAccidents + reportedAccidents, // Combine both sources
+            recentChange: `+${allIncidents.length} total`
+          });
+        }
+      } catch (error) {
+        console.error("Error aggregating frontend stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-32 bg-muted rounded-lg border border-border" />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
       <StatCard
         title="Active Incidents"
-        value={7}
-        change="+2 in last hour"
+        value={stats.activeIncidents}
+        change={stats.recentChange}
         trend="up"
         icon={<AlertTriangle className="w-4 h-4" />}
         severity="critical"
       />
       <StatCard
         title="Fire / Smoke"
-        value={2}
-        change="1 resolved"
-        trend="down"
+        value={stats.fireSmoke}
+        change="Live monitoring"
+        trend="neutral"
         icon={<Flame className="w-4 h-4" />}
         severity="warning"
       />
       <StatCard
-        title="Stalled Vehicles"
-        value={12}
-        change="+3 today"
+        title="Crashes / Accidents"
+        value={stats.accidents}
+        change="Total AI detections"
         trend="up"
-        icon={<Car className="w-4 h-4" />}
-        severity="default"
-      />
-      {/* <StatCard
-        title="System Uptime"
-        value="99.7%"
-        change="All cameras online"
-        trend="neutral"
         icon={<Activity className="w-4 h-4" />}
-        severity="success"
-      /> */}
+        severity="critical"
+      />
     </div>
   );
 }
