@@ -51,6 +51,7 @@ import ReportIssue from "./pages/ReportIssue";
 import LocationAnalysis from "./pages/LocationAnalysis"; // IMPORTED
 import NotFound from "./pages/NotFound";
 import AddCamera from "./pages/AddCamera";
+import FootageViewer from './components/FootageViewer';
 
 const queryClient = new QueryClient();
 
@@ -69,7 +70,7 @@ const App = () => (
             <Route path="/report" element={<ReportIssue />} />
             <Route path="/add-camera" element={<AddCamera />} />
             
-            <Route path="/footage" element={<FootageEvidence />} />
+            <Route path="/footage" element={<FootageViewer/>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

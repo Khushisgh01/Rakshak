@@ -203,9 +203,80 @@ export default function IncidentMap() {
                     width: "100%"
                   }}
                 >
-                  Navigate Now
+                  Navigate Now    
                 </button>
-                {/* Footage download button remains same */}
+{/* DOWNLOAD BUTTON */}
+<button 
+  onClick={async () => {
+    if (incident.footagePath) {
+      // 1. Fix the path splitting
+      const filename = incident.footagePath.split(/[/\\]/).pop();
+      const videoUrl = `http://127.0.0.1:8000/footages/${filename}`;
+      try {
+        // 2. Fetch the file as a Blob to bypass cross-origin download limits
+        const response = await fetch(videoUrl);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename || 'footage.mp4';
+        document.body.appendChild(a); // Required for Firefox
+        a.click();
+        
+        // Cleanup
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+      } catch (err) {
+        console.error("Download failed:", err);
+        // Fallback if fetch fails
+        window.open(videoUrl, '_blank');
+      }
+    } else {
+      window.open(incident.cameraUrl, '_blank');
+    }
+  }}
+  style={{
+    marginTop: "8px",
+    backgroundColor: "#2563eb",
+    color: "white",
+    border: "none",
+    padding: "4px 8px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    display: "block",
+    width: "100%"
+  }}
+>
+  Download Footage
+</button>
+
+{/* WATCH CLIPPING BUTTON */}
+<button 
+  onClick={() => {
+    if (incident.footagePath) {
+      // 1. Fix the path splitting here too!
+      const filename = incident.footagePath.split(/[/\\]/).pop();
+      window.open(`/footage?file=${filename}`, '_blank');
+    } else {
+      window.open(incident.cameraUrl, '_blank');
+    }
+  }}
+  style={{
+    marginTop: "8px",
+    backgroundColor: "#2563eb",
+    color: "white",
+    border: "none",
+    padding: "4px 8px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    display: "block",
+    width: "100%"
+  }}
+>
+  Watch clipping
+</button>
+
               </div>
             </Popup>
           </Marker>
