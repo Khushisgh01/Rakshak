@@ -49,7 +49,7 @@ export function StatCard({ title, value, change, trend, icon, severity = "defaul
 
 export function StatsGrid() {
   const [stats, setStats] = useState({
-    activeIncidents: 0,
+    totalIncidents: 0, // Changed from activeIncidents
     fireSmoke: 0,
     accidents: 0,
     recentChange: ""
@@ -59,7 +59,6 @@ export function StatsGrid() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch from existing Django endpoints
         const [incidentRes, cameraIncidentRes] = await Promise.all([
           fetch('http://localhost:8000/incident/get-all/'),
           fetch('http://localhost:8000/camera-incident/get-all/')
@@ -68,37 +67,35 @@ export function StatsGrid() {
         const incidentData = await incidentRes.json();
         const cameraIncidentData = await cameraIncidentRes.json();
 
-        // inside your useEffect fetchData function
-
         if (incidentData.success && cameraIncidentData.success) {
           const allIncidents = incidentData.incidents || [];
           const allCameraIncidents = cameraIncidentData.camera_incidents || [];
 
-          // 1. Count Fire/Smoke from general Incidents (User Reports)
+          // 1. Calculate Combined Total
+          const totalCount = allIncidents.length + allCameraIncidents.length;
+
+          // 2. Count Fire/Smoke from general Incidents (User Reports)
           const fireCount = allIncidents.filter((i: any) =>
             i.incident_type?.toLowerCase().includes("fire") ||
             i.incident_type?.toLowerCase().includes("smoke")
           ).length;
 
-          // 2. Count Accidents from BOTH sources
-
-          // From Camera_Incident table (using backend codes: c, cf, cs, cfs)
+          // 3. Count Accidents from BOTH sources
           const cameraAccidents = allCameraIncidents.filter((i: any) => {
             const type = i.incident_type?.toLowerCase();
             return type === 'c' || type === 'cf' || type === 'cs' || type === 'cfs';
           }).length;
 
-          // From Incident table (User reports usually use full words)
           const reportedAccidents = allIncidents.filter((i: any) =>
             i.incident_type?.toLowerCase().includes("accident") ||
             i.incident_type?.toLowerCase().includes("crash")
           ).length;
 
           setStats({
-            activeIncidents: allIncidents.length,
+            totalIncidents: totalCount, // Using the combined total
             fireSmoke: fireCount,
-            accidents: cameraAccidents + reportedAccidents, // Combine both sources
-            recentChange: `+${allIncidents.length} total`
+            accidents: cameraAccidents + reportedAccidents,
+            recentChange: `+${totalCount} detected`
           });
         }
       } catch (error) {
@@ -124,8 +121,8 @@ export function StatsGrid() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
       <StatCard
-        title="Active Incidents"
-        value={stats.activeIncidents}
+        title="Total Incidents" // Changed Label
+        value={stats.totalIncidents}
         change={stats.recentChange}
         trend="up"
         icon={<AlertTriangle className="w-4 h-4" />}

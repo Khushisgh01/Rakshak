@@ -7,7 +7,6 @@ import {
 import { useState, useEffect } from "react";
 
 // --- Helper: SQLite Date Parser ---
-// Fixes "Invalid Date" errors by handling SQLite's space separator and micro-seconds
 const parseBackendDate = (dateStr: string) => {
   if (!dateStr) return null;
   const cleanStr = dateStr.replace(' ', 'T').split('.')[0];
@@ -15,18 +14,32 @@ const parseBackendDate = (dateStr: string) => {
   return isNaN(date.getTime()) ? null : date;
 };
 
+// --- Incident Mapping Logic ---
+const incidentMapper: Record<string, string> = {
+  "c": "Crash",
+  "f": "Fire",
+  "s": "Smoke",
+  "cf": "Crash & Fire",
+  "cs": "Crash & Smoke",
+  "fs": "Fire & Smoke",
+  "cfs": "Crash, Fire & Smoke",
+  "o": "Other Incident",
+};
+
+const getCleanName = (code: string) => {
+  if (!code) return "Unknown";
+  const cleanCode = code.toLowerCase().trim();
+  return incidentMapper[cleanCode] || code;
+};
+
 // --- Data Processing Utilities ---
 const processHourlyData = (incidents: any[]) => {
   const counts = new Array(24).fill(0);
   incidents.forEach(inc => {
-    // USE THE HELPER: This handles both '2026-03-24 15:45:00' and ISO strings
     const date = parseBackendDate(inc.date_created);
-    
     if (date) {
       const hour = date.getHours();
       counts[hour]++;
-    } else {
-      console.warn("Could not parse date for incident:", inc);
     }
   });
 
@@ -61,9 +74,11 @@ const processMonthlyData = (incidents: any[]) => {
 const processTypeData = (incidents: any[]) => {
   const types: Record<string, number> = {};
   incidents.forEach(inc => {
-    types[inc.incident_type] = (types[inc.incident_type] || 0) + 1;
+    // Uses the cleaned name for grouping in the Pie Chart
+    const name = inc.incident_type;
+    types[name] = (types[name] || 0) + 1;
   });
-  const colors = ["hsl(0, 72%, 55%)", "hsl(38, 92%, 55%)", "hsl(210, 80%, 55%)", "hsl(220, 15%, 40%)"];
+  const colors = ["hsl(0, 72%, 55%)", "hsl(38, 92%, 55%)", "hsl(187, 80%, 50%)", "hsl(210, 80%, 55%)", "hsl(220, 15%, 40%)"];
   return Object.keys(types).map((name, i) => ({
     name,
     value: types[name],
@@ -84,13 +99,12 @@ const getReadableLocation = async (lat: number, lon: number): Promise<string> =>
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`
     );
     const data = await response.json();
-    // Extracts the neighborhood or road and city/area
     const addressParts = data.display_name.split(',');
     return addressParts.length > 1
       ? `${addressParts[0].trim()}, ${addressParts[1].trim()}`
       : `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
   } catch (error) {
-    return `${lat.toFixed(2)}, ${lon.toFixed(2)}`; // Fallback to coordinates
+    return `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
   }
 };
 
@@ -98,47 +112,6 @@ const Analytics = () => {
   const [incidents, setIncidents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // useEffect(() => {
-  //   const fetchCombinedData = async () => {
-  //     try {
-  //       const [resManual, resCamera] = await Promise.all([
-  //         fetch('http://localhost:8000/incident/get-all/'),
-  //         fetch('http://localhost:8000/camera-incident/get-all/')
-  //       ]);
-
-  //       const dataManual = await resManual.json();
-  //       const dataCamera = await resCamera.json();
-
-  //       // Normalize Incident table data
-  //       const manualMapped = (dataManual.incidents || []).map((inc: any) => ({
-  //         ...inc,
-  //         display_lat: inc.latitude,
-  //         display_lon: inc.longitude,
-  //         source_name: 'Public Citizen Report' 
-  //       }));
-
-  //       // Normalize Camera_Incident data with descriptive names
-  //       const cameraMapped = (dataCamera.camera_incidents || []).map((inc: any) => ({
-  //         ...inc,
-  //         display_lat: inc.camera_details?.latitude,
-  //         display_lon: inc.camera_details?.longitude,
-  //         source_name: `AI Surveillance Camera #${inc.camera_details?.id || '?'}`
-  //       }));
-
-  //       const combined = [...manualMapped, ...cameraMapped].sort((a, b) => 
-  //         new Date(b.date_created).getTime() - new Date(a.date_created).getTime()
-  //       );
-
-  //       setIncidents(combined);
-  //       setLoading(false);
-  //     } catch (err) {
-  //       console.error("Fetch Error:", err);
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchCombinedData();
-  // }, []);
   useEffect(() => {
     const fetchCombinedData = async () => {
       try {
@@ -150,16 +123,18 @@ const Analytics = () => {
         const dataManual = await resManual.json();
         const dataCamera = await resCamera.json();
 
-        // Normalize Incident table data and get location names
+        // Map and Clean Manual Reports
         const manualMapped = await Promise.all((dataManual.incidents || []).map(async (inc: any) => ({
           ...inc,
+          incident_type: getCleanName(inc.incident_type), // Convert code to Name
           display_location: await getReadableLocation(inc.latitude, inc.longitude),
           source_name: 'Public Citizen Report'
         })));
 
-        // Normalize Camera_Incident data and get location names
+        // Map and Clean Camera Detections
         const cameraMapped = await Promise.all((dataCamera.camera_incidents || []).map(async (inc: any) => ({
           ...inc,
+          incident_type: getCleanName(inc.incident_type), // Convert code to Name
           display_location: await getReadableLocation(
             inc.camera_details?.latitude,
             inc.camera_details?.longitude
@@ -209,33 +184,32 @@ const Analytics = () => {
             </div>
             <div>
               <h1 className="text-sm font-bold text-foreground tracking-tight">Analytics Dashboard</h1>
-              <p className="text-[10px] text-muted-foreground font-mono">HYBRID INCIDENT DATA STREAM</p>
+              <p className="text-[10px] text-muted-foreground font-mono uppercase">Hybrid Incident Stream</p>
             </div>
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
             <Clock className="w-3 h-3" />
-            <span>Last updated: {new Date().toLocaleTimeString()}</span>
+            <span>Refreshed: {new Date().toLocaleTimeString()}</span>
           </div>
         </div>
       </header>
 
       <main className="max-w-[1600px] mx-auto px-4 lg:px-6 py-6 space-y-6">
-        {/* Row 1: Hourly and Pie Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 rounded-lg border border-border bg-card p-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Hourly Incident Distribution</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Hourly Distribution</h3>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={hourlyData}>
                 <XAxis dataKey="hour" tick={{ fontSize: 10, fill: "hsl(215, 15%, 55%)" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: "hsl(215, 15%, 55%)" }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-                <Bar dataKey="incidents" fill="hsl(187, 80%, 50%)" radius={[4, 4, 0, 0]} name="Incidents" />
+                <Bar dataKey="incidents" fill="hsl(187, 80%, 50%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           <div className="rounded-lg border border-border bg-card p-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Incident Breakdown by Type</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Incident Types</h3>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie data={typeData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" stroke="none">
@@ -255,7 +229,6 @@ const Analytics = () => {
           </div>
         </div>
 
-        {/* Row 2: Weekly and Monthly Trends */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="rounded-lg border border-border bg-card p-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Weekly Trend</h3>
@@ -270,7 +243,7 @@ const Analytics = () => {
                 <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(215, 15%, 55%)" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: "hsl(215, 15%, 55%)" }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Area type="monotone" dataKey="incidents" stroke="hsl(187, 80%, 50%)" fillOpacity={1} fill="url(#colorInc)" strokeWidth={2} name="Incidents" />
+                <Area type="monotone" dataKey="incidents" stroke="hsl(187, 80%, 50%)" fillOpacity={1} fill="url(#colorInc)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -283,25 +256,24 @@ const Analytics = () => {
                 <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(215, 15%, 55%)" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: "hsl(215, 15%, 55%)" }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="incidents" stroke="hsl(0, 72%, 55%)" strokeWidth={3} dot={{ r: 4, fill: "hsl(0, 72%, 55%)" }} name="Incidents" />
+                <Line type="monotone" dataKey="incidents" stroke="hsl(0, 72%, 55%)" strokeWidth={3} dot={{ r: 4, fill: "hsl(0, 72%, 55%)" }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Historical Logs Table */}
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Unified Historical Logs</h3>
-            <div className="px-2 py-1 rounded bg-secondary text-[10px] text-muted-foreground font-mono font-bold tracking-tighter">TOTAL ENTRIES: {incidents.length}</div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Historical Event Log</h3>
+            <div className="px-2 py-1 rounded bg-secondary text-[10px] text-muted-foreground font-mono font-bold">TOTAL: {incidents.length}</div>
           </div>
           <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 bg-card z-10 shadow-sm">
+              <thead className="sticky top-0 bg-card z-10">
                 <tr className="text-muted-foreground border-b border-border text-[10px] uppercase tracking-widest font-bold">
-                  <th className="pb-3 px-2">Incident Type</th>
-                  <th className="pb-3 px-2">Detection Source</th>
-                  <th className="pb-3 px-2 text-center">Location (Lat/Lon)</th>
+                  <th className="pb-3 px-2">Incident</th>
+                  <th className="pb-3 px-2">Source</th>
+                  <th className="pb-3 px-2 text-center">Location</th>
                   <th className="pb-3 px-2">Timestamp</th>
                 </tr>
               </thead>
@@ -310,13 +282,15 @@ const Analytics = () => {
                   <tr key={inc.id || idx} className="border-b border-border/50 hover:bg-secondary/20 transition-colors">
                     <td className="py-3 px-2">
                       <span className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${inc.incident_type.toLowerCase().includes('fire') ? 'bg-orange-500' : 'bg-primary'}`} />
+                        <div className={`w-1.5 h-1.5 rounded-full ${
+                          inc.incident_type.toLowerCase().includes('fire') ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]' : 
+                          inc.incident_type.toLowerCase().includes('crash') ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-primary'
+                        }`} />
                         <span className="font-bold uppercase">{inc.incident_type}</span>
                       </span>
                     </td>
                     <td className="py-3 px-2 text-primary font-bold">{inc.source_name}</td>
                     <td className="py-3 px-2 text-muted-foreground text-center">
-                      {/* Updated to show location name instead of lat/lon */}
                       <span className="flex items-center justify-center gap-1 opacity-90 text-foreground font-semibold">
                         <MapPin className="w-3 h-3 text-red-500" />
                         {inc.display_location}
