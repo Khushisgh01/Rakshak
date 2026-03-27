@@ -7,7 +7,7 @@ interface Alert {
   location: string;
   time: string;
   date: string; // Added date field
-  icon: React.ReactNode;
+  // icon: React.ReactNode;
   timestamp: number;
 }
 
@@ -78,20 +78,28 @@ export function AlertFeed() {
 
         const processItems = async (items: any[], prefix: string) => {
           return await Promise.all((items || []).map(async (inc: any) => {
-            const fullName = getCleanName(inc.incident_type);
-            const dateObj = new Date(inc.date_created);
+            // 1. Ensure type is a string
+            const fullName = String(getCleanName(inc.incident_type));
+
+            // 2. Safely handle dates
+            const dateObj = inc.date_created ? new Date(inc.date_created) : new Date();
+            const safeDate = isNaN(dateObj.getTime()) ? "Unknown Date" : dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+            const safeTime = isNaN(dateObj.getTime()) ? "--:--" : dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            // 3. Extract lat/lon safely
+            const lat = inc.latitude || inc.camera_details?.latitude || 0;
+            const lon = inc.longitude || inc.camera_details?.longitude || 0;
+
+            // 4. Get location string
+            const locationName = await getReadableLocation(Number(lat), Number(lon));
+
             return {
-              id: `${prefix}-${inc.id}`,
+              id: String(`${prefix}-${inc.id}`),
               type: fullName,
-              location: await getReadableLocation(
-                inc.latitude || inc.camera_details?.latitude, 
-                inc.longitude || inc.camera_details?.longitude
-              ),
-              // Formatting Date and Time
-              date: dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-              time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              icon: getIcon(fullName),
-              timestamp: dateObj.getTime()
+              location: String(locationName), // Force string
+              date: String(safeDate),         // Force string
+              time: String(safeTime),         // Force string
+              timestamp: dateObj.getTime() || Date.now()
             };
           }));
         };
@@ -129,8 +137,9 @@ export function AlertFeed() {
         {alerts.map((alert) => (
           <div key={alert.id} className="p-4 hover:bg-secondary/30 transition-all duration-300 cursor-pointer group">
             <div className="flex gap-4">
+              {/* Pass alert.type to getDynamicStyle and getIcon directly */}
               <div className={`flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl border transition-all duration-500 ${getDynamicStyle(alert.type)}`}>
-                {alert.icon}
+                {getIcon(alert.type)}
               </div>
 
               <div className="flex-1 min-w-0">
@@ -139,12 +148,10 @@ export function AlertFeed() {
                     {alert.id}
                   </span>
                   <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
-                    {/* Displaying Date */}
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
                       {alert.date}
                     </div>
-                    {/* Displaying Time */}
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {alert.time}
@@ -155,7 +162,7 @@ export function AlertFeed() {
                 <h4 className="text-sm font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
                   {alert.type}
                 </h4>
-                
+
                 <div className="flex items-center gap-1 text-xs text-muted-foreground truncate italic">
                   <MapPin className="w-3 h-3 text-destructive/40" />
                   {alert.location}
