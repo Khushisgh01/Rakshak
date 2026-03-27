@@ -204,15 +204,6 @@ const Index = () => {
               <span>{new Date().toLocaleTimeString()}</span>
             </div>
 
-            <button className="relative p-2 rounded-md hover:bg-secondary transition-colors">
-              <Bell className="w-4 h-4 text-foreground" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full animate-pulse-slow" />
-            </button>
-
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-colors">
-              <Radio className="w-3 h-3" />
-              <span className="hidden sm:inline">Emergency</span>
-            </button>
           </div>
         </div>
       </header>
