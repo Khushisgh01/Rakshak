@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 // Fixes "Invalid Date" errors by handling SQLite's space separator and micro-seconds
 const parseBackendDate = (dateStr: string) => {
   if (!dateStr) return null;
-  const cleanStr = dateStr.replace(' ', 'T').split('.')[0]; 
+  const cleanStr = dateStr.replace(' ', 'T').split('.')[0];
   const date = new Date(cleanStr);
   return isNaN(date.getTime()) ? null : date;
 };
@@ -19,9 +19,17 @@ const parseBackendDate = (dateStr: string) => {
 const processHourlyData = (incidents: any[]) => {
   const counts = new Array(24).fill(0);
   incidents.forEach(inc => {
+    // USE THE HELPER: This handles both '2026-03-24 15:45:00' and ISO strings
     const date = parseBackendDate(inc.date_created);
-    if (date) counts[date.getHours()]++;
+    
+    if (date) {
+      const hour = date.getHours();
+      counts[hour]++;
+    } else {
+      console.warn("Could not parse date for incident:", inc);
+    }
   });
+
   return counts.map((count, hour) => ({
     hour: `${hour.toString().padStart(2, '0')}:00`,
     incidents: count
@@ -70,10 +78,67 @@ const tooltipStyle = {
   fontSize: "12px"
 };
 
+const getReadableLocation = async (lat: number, lon: number): Promise<string> => {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`
+    );
+    const data = await response.json();
+    // Extracts the neighborhood or road and city/area
+    const addressParts = data.display_name.split(',');
+    return addressParts.length > 1
+      ? `${addressParts[0].trim()}, ${addressParts[1].trim()}`
+      : `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+  } catch (error) {
+    return `${lat.toFixed(2)}, ${lon.toFixed(2)}`; // Fallback to coordinates
+  }
+};
+
 const Analytics = () => {
   const [incidents, setIncidents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // useEffect(() => {
+  //   const fetchCombinedData = async () => {
+  //     try {
+  //       const [resManual, resCamera] = await Promise.all([
+  //         fetch('http://localhost:8000/incident/get-all/'),
+  //         fetch('http://localhost:8000/camera-incident/get-all/')
+  //       ]);
+
+  //       const dataManual = await resManual.json();
+  //       const dataCamera = await resCamera.json();
+
+  //       // Normalize Incident table data
+  //       const manualMapped = (dataManual.incidents || []).map((inc: any) => ({
+  //         ...inc,
+  //         display_lat: inc.latitude,
+  //         display_lon: inc.longitude,
+  //         source_name: 'Public Citizen Report' 
+  //       }));
+
+  //       // Normalize Camera_Incident data with descriptive names
+  //       const cameraMapped = (dataCamera.camera_incidents || []).map((inc: any) => ({
+  //         ...inc,
+  //         display_lat: inc.camera_details?.latitude,
+  //         display_lon: inc.camera_details?.longitude,
+  //         source_name: `AI Surveillance Camera #${inc.camera_details?.id || '?'}`
+  //       }));
+
+  //       const combined = [...manualMapped, ...cameraMapped].sort((a, b) => 
+  //         new Date(b.date_created).getTime() - new Date(a.date_created).getTime()
+  //       );
+
+  //       setIncidents(combined);
+  //       setLoading(false);
+  //     } catch (err) {
+  //       console.error("Fetch Error:", err);
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchCombinedData();
+  // }, []);
   useEffect(() => {
     const fetchCombinedData = async () => {
       try {
@@ -85,23 +150,24 @@ const Analytics = () => {
         const dataManual = await resManual.json();
         const dataCamera = await resCamera.json();
 
-        // Normalize Incident table data
-        const manualMapped = (dataManual.incidents || []).map((inc: any) => ({
+        // Normalize Incident table data and get location names
+        const manualMapped = await Promise.all((dataManual.incidents || []).map(async (inc: any) => ({
           ...inc,
-          display_lat: inc.latitude,
-          display_lon: inc.longitude,
-          source_name: 'Public Citizen Report' 
-        }));
+          display_location: await getReadableLocation(inc.latitude, inc.longitude),
+          source_name: 'Public Citizen Report'
+        })));
 
-        // Normalize Camera_Incident data with descriptive names
-        const cameraMapped = (dataCamera.camera_incidents || []).map((inc: any) => ({
+        // Normalize Camera_Incident data and get location names
+        const cameraMapped = await Promise.all((dataCamera.camera_incidents || []).map(async (inc: any) => ({
           ...inc,
-          display_lat: inc.camera_details?.latitude,
-          display_lon: inc.camera_details?.longitude,
+          display_location: await getReadableLocation(
+            inc.camera_details?.latitude,
+            inc.camera_details?.longitude
+          ),
           source_name: `AI Surveillance Camera #${inc.camera_details?.id || '?'}`
-        }));
+        })));
 
-        const combined = [...manualMapped, ...cameraMapped].sort((a, b) => 
+        const combined = [...manualMapped, ...cameraMapped].sort((a, b) =>
           new Date(b.date_created).getTime() - new Date(a.date_created).getTime()
         );
 
@@ -162,7 +228,7 @@ const Analytics = () => {
               <BarChart data={hourlyData}>
                 <XAxis dataKey="hour" tick={{ fontSize: 10, fill: "hsl(215, 15%, 55%)" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: "hsl(215, 15%, 55%)" }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                 <Bar dataKey="incidents" fill="hsl(187, 80%, 50%)" radius={[4, 4, 0, 0]} name="Incidents" />
               </BarChart>
             </ResponsiveContainer>
@@ -197,8 +263,8 @@ const Analytics = () => {
               <AreaChart data={weeklyTrend}>
                 <defs>
                   <linearGradient id="colorInc" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(187, 80%, 50%)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="hsl(187, 80%, 50%)" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="hsl(187, 80%, 50%)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(187, 80%, 50%)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(215, 15%, 55%)" }} axisLine={false} tickLine={false} />
@@ -250,7 +316,11 @@ const Analytics = () => {
                     </td>
                     <td className="py-3 px-2 text-primary font-bold">{inc.source_name}</td>
                     <td className="py-3 px-2 text-muted-foreground text-center">
-                      <span className="flex items-center justify-center gap-1 opacity-80"><MapPin className="w-3 h-3" />{inc.display_lat}, {inc.display_lon}</span>
+                      {/* Updated to show location name instead of lat/lon */}
+                      <span className="flex items-center justify-center gap-1 opacity-90 text-foreground font-semibold">
+                        <MapPin className="w-3 h-3 text-red-500" />
+                        {inc.display_location}
+                      </span>
                     </td>
                     <td className="py-3 px-2 opacity-80">{new Date(inc.date_created).toLocaleString()}</td>
                   </tr>

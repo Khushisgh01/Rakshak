@@ -129,7 +129,7 @@ import { Link } from "react-router-dom";
 import { StatsGrid } from "@/components/StatsGrid";
 import { AlertFeed } from "@/components/AlertFeed";
 import IncidentMap from "@/components/IncidentMap";
-import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
+// import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Index = () => {
@@ -239,7 +239,7 @@ const Index = () => {
         </div>
 
         {/* Main Analytics Dashboard */}
-        <AnalyticsDashboard />
+        {/* <AnalyticsDashboard /> */}
       </main>
 
       {/* Footer */}
